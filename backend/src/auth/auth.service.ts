@@ -51,7 +51,7 @@ export class AuthService {
       },
     });
 
-    const user = company.users[0]!;
+    const user = company.users[0];
     const token = await this.signToken(user);
 
     return { user, token };
@@ -91,7 +91,11 @@ export class AuthService {
     return user;
   }
 
-  private async signToken(user: { id: string; email: string; companyId: string }) {
+  private async signToken(user: {
+    id: string;
+    email: string;
+    companyId: string;
+  }) {
     return this.jwt.signAsync({
       sub: user.id,
       email: user.email,

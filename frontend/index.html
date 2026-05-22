@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CRM MVP</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #0b1020;
+        --panel: #121a33;
+        --muted: #a7b0d6;
+        --text: #eef1ff;
+        --accent: #6aa6ff;
+        --border: rgba(255, 255, 255, 0.12);
+        --danger: #ff6a6a;
+        --ok: #5dd39e;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial;
+        background: radial-gradient(1200px 600px at 20% 0%, #1a2a66, var(--bg));
+        color: var(--text);
+      }
+
+      header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.12);
+        backdrop-filter: blur(8px);
+      }
+
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 20px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 16px;
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+
+      h2 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.25);
+        color: var(--text);
+        outline: none;
+      }
+
+      input:focus {
+        border-color: rgba(106, 166, 255, 0.6);
+        box-shadow: 0 0 0 3px rgba(106, 166, 255, 0.18);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .row1 {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 12px;
+      }
+
+      button {
+        border: 1px solid var(--border);
+        background: rgba(106, 166, 255, 0.18);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: rgba(106, 166, 255, 0.28);
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .danger {
+        background: rgba(255, 106, 106, 0.12);
+      }
+
+      .danger:hover {
+        background: rgba(255, 106, 106, 0.22);
+      }
+
+      .status {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .status.err {
+        color: var(--danger);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>CRM MVP — S02 (Clientes)</h1>
+    </header>
+
+    <main>
+      <div class="grid">
+        <section class="card">
+          <h2>Autenticação</h2>
+
+          <form id="authForm" class="row1">
+            <div>
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" required />
+            </div>
+            <div>
+              <label for="password">Senha</label>
+              <input id="password" name="password" type="password" required />
+            </div>
+            <div>
+              <label for="companyName">Empresa (apenas no cadastro)</label>
+              <input id="companyName" name="companyName" type="text" />
+            </div>
+
+            <div class="actions">
+              <button id="registerBtn" type="button">Cadastrar</button>
+              <button id="loginBtn" type="button">Login</button>
+              <button id="logoutBtn" class="danger" type="button">Logout</button>
+              <span id="authStatus" class="status"></span>
+            </div>
+          </form>
+
+          <p class="muted" style="margin: 12px 0 0 0">
+            Sessão via <code>cookie HttpOnly</code>. O frontend fala com o backend
+            via <code>/api</code> (proxy) e mantém o cookie automaticamente.
+          </p>
+        </section>
+
+        <section class="card">
+          <h2>Novo cliente</h2>
+          <form id="customerForm" class="row1">
+            <div>
+              <label for="customerName">Nome</label>
+              <input id="customerName" name="name" required />
+            </div>
+            <div class="row">
+              <div>
+                <label for="customerEmail">Email</label>
+                <input id="customerEmail" name="email" type="email" />
+              </div>
+              <div>
+                <label for="customerPhone">Telefone</label>
+                <input id="customerPhone" name="phone" />
+              </div>
+            </div>
+            <div class="actions">
+              <button id="createCustomerBtn" type="submit">Criar</button>
+              <button id="refreshBtn" type="button">Atualizar lista</button>
+              <span id="custStatus" class="status"></span>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>Clientes</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Telefone</th>
+              <th class="muted">ID</th>
+            </tr>
+          </thead>
+          <tbody id="customersTbody"></tbody>
+        </table>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
