@@ -4,7 +4,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { Request } from 'express';
 
 function extractJwtFromCookie(req: Request): string | null {
-  return (req as any)?.cookies?.session ?? null;
+  const cookies = req.cookies as unknown;
+  if (!cookies || typeof cookies !== 'object') return null;
+  const c = cookies as Record<string, unknown>;
+  return typeof c.session === 'string' ? c.session : null;
 }
 
 @Injectable()
@@ -22,15 +25,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
-    if (!payload?.sub) {
+  validate(payload: unknown) {
+    if (!payload || typeof payload !== 'object') {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    const p = payload as Record<string, unknown>;
+    const sub = typeof p.sub === 'string' ? p.sub : undefined;
+    const companyId = typeof p.companyId === 'string' ? p.companyId : undefined;
+    const email = typeof p.email === 'string' ? p.email : undefined;
+
+    if (!sub || !companyId) {
       throw new UnauthorizedException('Invalid token');
     }
 
     return {
-      userId: payload.sub as string,
-      companyId: payload.companyId as string,
-      email: payload.email as string,
+      userId: sub,
+      companyId,
+      email,
     };
   }
 }

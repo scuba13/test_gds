@@ -41,7 +41,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
-  async logout(@Res({ passthrough: true }) res: Response) {
+  logout(@Res({ passthrough: true }) res: Response) {
     const isProd = process.env.NODE_ENV === 'production';
 
     // Ensure the clearing cookie matches the same attributes as the auth cookie.
@@ -60,7 +60,8 @@ export class AuthController {
   @UseGuards(AuthGuard)
   async me(@Req() req: Request) {
     const userId = req.user!.userId;
-    return { user: await this.auth.me(userId) };
+    const user = await this.auth.me(userId);
+    return { user };
   }
 
   private setSessionCookie(res: Response, token: string) {

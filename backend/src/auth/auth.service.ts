@@ -72,7 +72,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const { passwordHash, ...safeUser } = user;
+    // omit passwordHash from returned user payload
+    const { passwordHash: _passwordHash, ...safeUser } = user;
+    void _passwordHash;
     const token = await this.signToken(safeUser);
 
     return { user: safeUser, token };

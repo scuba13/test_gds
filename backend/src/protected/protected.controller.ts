@@ -7,10 +7,11 @@ import { AuthGuard } from '../common/guards/auth.guard';
 export class ProtectedController {
   @Get('ping')
   ping(@Req() req: Request) {
+    const { userId, companyId } = req.user!;
     return {
       ok: true,
-      userId: req.user!.userId,
-      companyId: req.user!.companyId,
+      userId,
+      companyId,
     };
   }
 }

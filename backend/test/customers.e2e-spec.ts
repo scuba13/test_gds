@@ -1,5 +1,25 @@
 import request from 'supertest';
 
+type CustomerDto = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
+
+function assertCustomerDto(value: unknown): asserts value is CustomerDto {
+  if (!value || typeof value !== 'object')
+    throw new Error('Invalid customer dto');
+  const v = value as Record<string, unknown>;
+  if (typeof v.id !== 'string') throw new Error('Invalid customer dto: id');
+  if (typeof v.name !== 'string') throw new Error('Invalid customer dto: name');
+}
+
+function assertCustomerList(value: unknown): asserts value is CustomerDto[] {
+  if (!Array.isArray(value)) throw new Error('Expected customer list');
+  for (const item of value) assertCustomerDto(item);
+}
+
 describe('Customers (e2e)', () => {
   const baseUrl = process.env.E2E_BASE_URL ?? 'http://localhost:3001';
   const password = 'password123';
@@ -26,25 +46,27 @@ describe('Customers (e2e)', () => {
       .send({ name: 'Acme', email: 'acme@example.com', phone: '123' })
       .expect(201);
 
-    expect(createRes.body?.id).toBeTruthy();
-    expect(createRes.body?.name).toBe('Acme');
+    assertCustomerDto(createRes.body);
+    expect(createRes.body.id).toBeTruthy();
+    expect(createRes.body.name).toBe('Acme');
 
-    const customerId = createRes.body.id as string;
+    const customerId = createRes.body.id;
 
     const listRes = await request(baseUrl)
       .get('/customers')
       .set('Cookie', cookie)
       .expect(200);
 
-    expect(Array.isArray(listRes.body)).toBe(true);
-    expect(listRes.body.some((c: any) => c.id === customerId)).toBe(true);
+    assertCustomerList(listRes.body);
+    expect(listRes.body.some((c) => c.id === customerId)).toBe(true);
 
     const getRes = await request(baseUrl)
       .get(`/customers/${customerId}`)
       .set('Cookie', cookie)
       .expect(200);
 
-    expect(getRes.body?.id).toBe(customerId);
+    assertCustomerDto(getRes.body);
+    expect(getRes.body.id).toBe(customerId);
 
     const patchRes = await request(baseUrl)
       .patch(`/customers/${customerId}`)
@@ -52,8 +74,9 @@ describe('Customers (e2e)', () => {
       .send({ name: 'Acme Updated' })
       .expect(200);
 
-    expect(patchRes.body?.id).toBe(customerId);
-    expect(patchRes.body?.name).toBe('Acme Updated');
+    assertCustomerDto(patchRes.body);
+    expect(patchRes.body.id).toBe(customerId);
+    expect(patchRes.body.name).toBe('Acme Updated');
 
     await request(baseUrl)
       .delete(`/customers/${customerId}`)
@@ -79,7 +102,8 @@ describe('Customers (e2e)', () => {
       .send({ name: 'Tenant A Customer' })
       .expect(201);
 
-    const customerId = createRes.body.id as string;
+    assertCustomerDto(createRes.body);
+    const customerId = createRes.body.id;
 
     await request(baseUrl)
       .get(`/customers/${customerId}`)

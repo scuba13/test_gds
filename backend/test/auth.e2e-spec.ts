@@ -23,17 +23,27 @@ describe('Auth + tenant context (e2e)', () => {
       .set('Cookie', cookie)
       .expect(200);
 
-    expect(meRes.body?.user?.email).toBe(email);
-    expect(meRes.body?.user?.companyId).toBeTruthy();
+    expect(meRes.body).toEqual(
+      expect.objectContaining({
+        user: expect.objectContaining({
+          email,
+          companyId: expect.any(String),
+        }),
+      }),
+    );
 
     const pingRes = await request(baseUrl)
       .get('/protected/ping')
       .set('Cookie', cookie)
       .expect(200);
 
-    expect(pingRes.body?.ok).toBe(true);
-    expect(pingRes.body?.userId).toBeTruthy();
-    expect(pingRes.body?.companyId).toBeTruthy();
+    expect(pingRes.body).toEqual(
+      expect.objectContaining({
+        ok: true,
+        userId: expect.any(String),
+        companyId: expect.any(String),
+      }),
+    );
 
     const logoutRes = await request(baseUrl)
       .post('/auth/logout')
@@ -70,6 +80,27 @@ describe('Auth + tenant context (e2e)', () => {
       .set('Cookie', cookieB)
       .expect(200);
 
-    expect(meA.body.user.companyId).not.toEqual(meB.body.user.companyId);
+    expect(meA.body).toEqual(
+      expect.objectContaining({
+        user: expect.objectContaining({
+          companyId: expect.any(String),
+        }),
+      }),
+    );
+
+    expect(meB.body).toEqual(
+      expect.objectContaining({
+        user: expect.objectContaining({
+          companyId: expect.any(String),
+        }),
+      }),
+    );
+
+    const companyIdA = (meA.body as { user: { companyId: string } }).user
+      .companyId;
+    const companyIdB = (meB.body as { user: { companyId: string } }).user
+      .companyId;
+
+    expect(companyIdA).not.toEqual(companyIdB);
   });
 });
