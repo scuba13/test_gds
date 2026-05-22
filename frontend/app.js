@@ -15,6 +15,16 @@ const refreshBtn = document.querySelector('#refreshBtn');
 
 const customersTbody = document.querySelector('#customersTbody');
 
+const selectedCustomerLabel = document.querySelector('#selectedCustomerLabel');
+const contactsTbody = document.querySelector('#contactsTbody');
+const contactStatus = document.querySelector('#contactStatus');
+
+const contactForm = document.querySelector('#contactForm');
+const createContactBtn = document.querySelector('#createContactBtn');
+const refreshContactsBtn = document.querySelector('#refreshContactsBtn');
+
+let selectedCustomerId = null;
+
 function setStatus(el, type, text) {
   el.textContent = text;
   el.classList.remove('ok', 'err');
@@ -45,6 +55,45 @@ async function api(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+function setSelectedCustomer(customer) {
+  selectedCustomerId = customer?.id ?? null;
+  selectedCustomerLabel.textContent = selectedCustomerId
+    ? `${customer.name} (${customer.id})`
+    : 'nenhum';
+
+  // Reset contact UI
+  contactsTbody.innerHTML = '';
+  setStatus(contactStatus, null, '');
+}
+
+async function refreshContacts() {
+  if (!selectedCustomerId) {
+    setStatus(contactStatus, 'err', 'Selecione um cliente primeiro');
+    return;
+  }
+
+  try {
+    setStatus(contactStatus, null, 'Carregando...');
+    const contacts = await api(`/customers/${selectedCustomerId}/contacts`);
+
+    contactsTbody.innerHTML = '';
+    for (const c of contacts) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(c.name ?? '')}</td>
+        <td>${escapeHtml(c.email ?? '')}</td>
+        <td>${escapeHtml(c.phone ?? '')}</td>
+        <td class="muted"><code>${escapeHtml(c.id ?? '')}</code></td>
+      `;
+      contactsTbody.appendChild(tr);
+    }
+
+    setStatus(contactStatus, 'ok', `${contacts.length} contato(s)`);
+  } catch (err) {
+    setStatus(contactStatus, 'err', err.message);
+  }
+}
+
 async function refreshCustomers() {
   try {
     setStatus(custStatus, null, 'Carregando...');
@@ -58,8 +107,22 @@ async function refreshCustomers() {
         <td>${escapeHtml(c.email ?? '')}</td>
         <td>${escapeHtml(c.phone ?? '')}</td>
         <td class="muted"><code>${escapeHtml(c.id ?? '')}</code></td>
+        <td><button type="button" data-select-customer="${escapeHtml(c.id ?? '')}">Selecionar</button></td>
       `;
+
+      const btn = tr.querySelector('button[data-select-customer]');
+      btn.addEventListener('click', async () => {
+        setSelectedCustomer(c);
+        await refreshContacts();
+      });
+
       customersTbody.appendChild(tr);
+    }
+
+    // Keep current selection if present
+    if (!selectedCustomerId && customers.length > 0) {
+      setSelectedCustomer(customers[0]);
+      await refreshContacts();
     }
 
     setStatus(custStatus, 'ok', `${customers.length} cliente(s)`);
@@ -89,6 +152,7 @@ registerBtn.addEventListener('click', async () => {
       },
     });
     setStatus(authStatus, 'ok', 'Cadastrado e logado (cookie emitido)');
+    setSelectedCustomer(null);
     await refreshCustomers();
   } catch (err) {
     setStatus(authStatus, 'err', err.message);
@@ -103,6 +167,7 @@ loginBtn.addEventListener('click', async () => {
       body: { email: emailEl.value, password: passwordEl.value },
     });
     setStatus(authStatus, 'ok', 'Logado (cookie emitido)');
+    setSelectedCustomer(null);
     await refreshCustomers();
   } catch (err) {
     setStatus(authStatus, 'err', err.message);
@@ -115,6 +180,7 @@ logoutBtn.addEventListener('click', async () => {
     await api('/auth/logout', { method: 'POST' });
     setStatus(authStatus, 'ok', 'Logout ok');
     customersTbody.innerHTML = '';
+    setSelectedCustomer(null);
     setStatus(custStatus, null, '');
   } catch (err) {
     setStatus(authStatus, 'err', err.message);
@@ -138,6 +204,7 @@ customerForm.addEventListener('submit', async (e) => {
     await api('/customers', { method: 'POST', body });
     setStatus(custStatus, 'ok', 'Cliente criado');
     customerForm.reset();
+    setSelectedCustomer(null);
     await refreshCustomers();
   } catch (err) {
     setStatus(custStatus, 'err', err.message);
@@ -148,13 +215,51 @@ customerForm.addEventListener('submit', async (e) => {
 
 refreshBtn.addEventListener('click', refreshCustomers);
 
+contactForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!selectedCustomerId) {
+    setStatus(contactStatus, 'err', 'Selecione um cliente primeiro');
+    return;
+  }
+
+  try {
+    createContactBtn.disabled = true;
+    setStatus(contactStatus, null, 'Criando...');
+
+    const fd = new FormData(contactForm);
+    const body = {
+      name: fd.get('name'),
+      email: fd.get('email'),
+      phone: fd.get('phone') || undefined,
+    };
+
+    await api(`/customers/${selectedCustomerId}/contacts`, {
+      method: 'POST',
+      body,
+    });
+
+    setStatus(contactStatus, 'ok', 'Contato criado');
+    contactForm.reset();
+    await refreshContacts();
+  } catch (err) {
+    setStatus(contactStatus, 'err', err.message);
+  } finally {
+    createContactBtn.disabled = false;
+  }
+});
+
+refreshContactsBtn.addEventListener('click', refreshContacts);
+
 // Best-effort: check if already logged by calling /me
 (async () => {
   try {
     await api('/auth/me');
     setStatus(authStatus, 'ok', 'Sessão ativa');
+    setSelectedCustomer(null);
     await refreshCustomers();
   } catch {
     setStatus(authStatus, null, 'Não autenticado');
+    setSelectedCustomer(null);
   }
 })();

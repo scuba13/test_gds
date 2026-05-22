@@ -19,6 +19,7 @@ model Company {
 
   users     User[]
   customers Customer[]
+  contacts  Contact[]
 
   @@map("companies")
 }
@@ -47,9 +48,29 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contacts Contact[]
 
   @@index([companyId])
   @@unique([companyId, email])
   @@map("customers")
+}
+
+model Contact {
+  id         String   @id @default(cuid())
+  companyId  String
+  customerId String
+  name       String
+  email      String
+  phone      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@unique([companyId, email])
+  @@map("contacts")
 }

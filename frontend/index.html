@@ -246,7 +246,50 @@
 
       <section class="card">
         <h2>Clientes</h2>
+        <div class="actions" style="margin: 0 0 10px 0">
+          <span class="muted" style="font-size: 12px">Selecionado:</span>
+          <span id="selectedCustomerLabel" class="status"></span>
+        </div>
         <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Telefone</th>
+              <th class="muted">ID</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="customersTbody"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Contatos do cliente</h2>
+
+        <form id="contactForm" class="row1">
+          <div>
+            <label for="contactName">Nome</label>
+            <input id="contactName" name="name" required />
+          </div>
+          <div class="row">
+            <div>
+              <label for="contactEmail">Email</label>
+              <input id="contactEmail" name="email" type="email" required />
+            </div>
+            <div>
+              <label for="contactPhone">Telefone</label>
+              <input id="contactPhone" name="phone" />
+            </div>
+          </div>
+          <div class="actions">
+            <button id="createContactBtn" type="submit">Criar contato</button>
+            <button id="refreshContactsBtn" type="button">Atualizar contatos</button>
+            <span id="contactStatus" class="status"></span>
+          </div>
+        </form>
+
+        <table style="margin-top: 12px">
           <thead>
             <tr>
               <th>Nome</th>
@@ -255,7 +298,7 @@
               <th class="muted">ID</th>
             </tr>
           </thead>
-          <tbody id="customersTbody"></tbody>
+          <tbody id="contactsTbody"></tbody>
         </table>
       </section>
     </main>

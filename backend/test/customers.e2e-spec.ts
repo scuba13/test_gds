@@ -25,9 +25,12 @@ describe('Customers (e2e)', () => {
   const password = 'password123';
 
   async function registerAndGetCookie(email: string) {
+    // Ensure unique emails even when tests run quickly in the same millisecond.
+    const uniqueEmail = `${email.replace('@', `_${process.hrtime.bigint()}@`)}`;
+
     const registerRes = await request(baseUrl)
       .post('/auth/register')
-      .send({ email, password, companyName: 'E2E Co' })
+      .send({ email: uniqueEmail, password, companyName: 'E2E Co' })
       .expect(201);
 
     const setCookie = registerRes.header['set-cookie'];
