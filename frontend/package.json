@@ -1,0 +1,10 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "test": "node -e \"console.log('no tests')\""
+  }
+}
