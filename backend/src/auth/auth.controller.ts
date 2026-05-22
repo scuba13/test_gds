@@ -9,10 +9,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { AuthGuard } from '../common/guards/auth.guard';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -57,9 +57,9 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard)
   async me(@Req() req: Request) {
-    const userId = (req.user as any)?.userId as string;
+    const userId = req.user!.userId;
     return { user: await this.auth.me(userId) };
   }
 
