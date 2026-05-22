@@ -301,6 +301,49 @@
           <tbody id="contactsTbody"></tbody>
         </table>
       </section>
+
+      <section class="card">
+        <h2>Oportunidades</h2>
+
+        <form id="oppForm" class="row1">
+          <div>
+            <label for="oppTitle">Título</label>
+            <input id="oppTitle" name="title" required />
+          </div>
+          <div class="row">
+            <div>
+              <label for="oppAmount">Valor</label>
+              <input id="oppAmount" name="amount" type="number" min="0" step="0.01" required />
+            </div>
+            <div>
+              <label for="oppStage">Etapa</label>
+              <input id="oppStage" name="stage" placeholder="NEW | QUALIFIED | PROPOSAL | NEGOTIATION | WON | LOST" required />
+            </div>
+          </div>
+          <div>
+            <label for="oppExpectedCloseDate">Expected close date (opcional)</label>
+            <input id="oppExpectedCloseDate" name="expectedCloseDate" type="date" />
+          </div>
+          <div class="actions">
+            <button id="createOppBtn" type="submit">Criar oportunidade</button>
+            <button id="refreshOppsBtn" type="button">Atualizar oportunidades</button>
+            <span id="oppStatus" class="status"></span>
+          </div>
+        </form>
+
+        <table style="margin-top: 12px">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Stage</th>
+              <th>Valor</th>
+              <th>Customer</th>
+              <th class="muted">ID</th>
+            </tr>
+          </thead>
+          <tbody id="oppsTbody"></tbody>
+        </table>
+      </section>
     </main>
 
     <script type="module" src="/app.js"></script>

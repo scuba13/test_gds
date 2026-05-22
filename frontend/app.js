@@ -23,6 +23,12 @@ const contactForm = document.querySelector('#contactForm');
 const createContactBtn = document.querySelector('#createContactBtn');
 const refreshContactsBtn = document.querySelector('#refreshContactsBtn');
 
+const oppForm = document.querySelector('#oppForm');
+const createOppBtn = document.querySelector('#createOppBtn');
+const refreshOppsBtn = document.querySelector('#refreshOppsBtn');
+const oppStatus = document.querySelector('#oppStatus');
+const oppsTbody = document.querySelector('#oppsTbody');
+
 let selectedCustomerId = null;
 
 function setStatus(el, type, text) {
@@ -94,6 +100,37 @@ async function refreshContacts() {
   }
 }
 
+async function refreshOpportunities() {
+  if (!selectedCustomerId) {
+    setStatus(oppStatus, 'err', 'Selecione um cliente primeiro');
+    return;
+  }
+
+  try {
+    setStatus(oppStatus, null, 'Carregando...');
+    const opps = await api('/opportunities');
+
+    const filtered = opps.filter((o) => o.customerId === selectedCustomerId);
+
+    oppsTbody.innerHTML = '';
+    for (const o of filtered) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(o.title ?? '')}</td>
+        <td>${escapeHtml(o.stage ?? '')}</td>
+        <td>${escapeHtml(o.amount ?? '')}</td>
+        <td class="muted"><code>${escapeHtml(o.customerId ?? '')}</code></td>
+        <td class="muted"><code>${escapeHtml(o.id ?? '')}</code></td>
+      `;
+      oppsTbody.appendChild(tr);
+    }
+
+    setStatus(oppStatus, 'ok', `${filtered.length} oportunidade(s)`);
+  } catch (err) {
+    setStatus(oppStatus, 'err', err.message);
+  }
+}
+
 async function refreshCustomers() {
   try {
     setStatus(custStatus, null, 'Carregando...');
@@ -114,6 +151,7 @@ async function refreshCustomers() {
       btn.addEventListener('click', async () => {
         setSelectedCustomer(c);
         await refreshContacts();
+        await refreshOpportunities();
       });
 
       customersTbody.appendChild(tr);
@@ -123,6 +161,7 @@ async function refreshCustomers() {
     if (!selectedCustomerId && customers.length > 0) {
       setSelectedCustomer(customers[0]);
       await refreshContacts();
+      await refreshOpportunities();
     }
 
     setStatus(custStatus, 'ok', `${customers.length} cliente(s)`);
@@ -251,6 +290,41 @@ contactForm.addEventListener('submit', async (e) => {
 
 refreshContactsBtn.addEventListener('click', refreshContacts);
 
+oppForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!selectedCustomerId) {
+    setStatus(oppStatus, 'err', 'Selecione um cliente primeiro');
+    return;
+  }
+
+  try {
+    createOppBtn.disabled = true;
+    setStatus(oppStatus, null, 'Criando...');
+
+    const fd = new FormData(oppForm);
+    const body = {
+      customerId: selectedCustomerId,
+      title: fd.get('title'),
+      amount: Number(fd.get('amount')),
+      stage: String(fd.get('stage') || '').trim().toUpperCase(),
+      expectedCloseDate: fd.get('expectedCloseDate') || undefined,
+    };
+
+    await api('/opportunities', { method: 'POST', body });
+
+    setStatus(oppStatus, 'ok', 'Oportunidade criada');
+    oppForm.reset();
+    await refreshOpportunities();
+  } catch (err) {
+    setStatus(oppStatus, 'err', err.message);
+  } finally {
+    createOppBtn.disabled = false;
+  }
+});
+
+refreshOppsBtn.addEventListener('click', refreshOpportunities);
+
 // Best-effort: check if already logged by calling /me
 (async () => {
   try {
@@ -258,6 +332,7 @@ refreshContactsBtn.addEventListener('click', refreshContacts);
     setStatus(authStatus, 'ok', 'Sessão ativa');
     setSelectedCustomer(null);
     await refreshCustomers();
+    await refreshOpportunities();
   } catch {
     setStatus(authStatus, null, 'Não autenticado');
     setSelectedCustomer(null);

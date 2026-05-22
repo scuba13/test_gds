@@ -11,15 +11,25 @@ datasource db {
   provider = "postgresql"
 }
 
+enum OpportunityStage {
+  NEW
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
 model Company {
   id        String   @id @default(cuid())
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users     User[]
-  customers Customer[]
-  contacts  Contact[]
+  users         User[]
+  customers     Customer[]
+  contacts      Contact[]
+  opportunities Opportunity[]
 
   @@map("companies")
 }
@@ -48,8 +58,9 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  contacts Contact[]
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contacts       Contact[]
+  opportunities  Opportunity[]
 
   @@index([companyId])
   @@unique([companyId, email])
@@ -73,4 +84,24 @@ model Contact {
   @@index([customerId])
   @@unique([companyId, email])
   @@map("contacts")
+}
+
+model Opportunity {
+  id                String           @id @default(cuid())
+  companyId          String
+  customerId         String
+  title              String
+  amount             Decimal          @db.Decimal(12, 2)
+  stage              OpportunityStage
+  expectedCloseDate  DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([companyId, stage])
+  @@map("opportunities")
 }
