@@ -42,9 +42,17 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   async logout(@Res({ passthrough: true }) res: Response) {
+    const isProd = process.env.NODE_ENV === 'production';
+
+    // Ensure the clearing cookie matches the same attributes as the auth cookie.
+    // Otherwise browsers may keep the original cookie around.
     res.clearCookie(this.auth.getSessionCookieName(), {
       path: '/',
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
     });
+
     return { ok: true };
   }
 
