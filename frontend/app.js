@@ -27,7 +27,7 @@ const oppForm = document.querySelector('#oppForm');
 const createOppBtn = document.querySelector('#createOppBtn');
 const refreshOppsBtn = document.querySelector('#refreshOppsBtn');
 const oppStatus = document.querySelector('#oppStatus');
-const oppsTbody = document.querySelector('#oppsTbody');
+const kanban = document.querySelector('#kanban');
 
 let selectedCustomerId = null;
 
@@ -100,6 +100,102 @@ async function refreshContacts() {
   }
 }
 
+const STAGES = ['NEW', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'];
+
+function formatAmount(value) {
+  if (value === null || value === undefined || value === '') return '';
+  const n = Number(value);
+  if (Number.isNaN(n)) return String(value);
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function buildKanbanColumn(stage) {
+  const col = document.createElement('section');
+  col.className = 'kanban-col';
+
+  const title = document.createElement('h3');
+  title.textContent = stage;
+
+  const drop = document.createElement('div');
+  drop.className = 'kanban-drop';
+  drop.dataset.stage = stage;
+
+  drop.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    drop.classList.add('drop-active');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drop-active'));
+  drop.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    drop.classList.remove('drop-active');
+
+    const oppId =
+      e.dataTransfer?.getData('text/opportunity-id') ||
+      e.dataTransfer?.getData('text/plain');
+    if (!oppId) return;
+
+    try {
+      setStatus(oppStatus, null, 'Movendo...');
+      await api(`/opportunities/${oppId}/move`, {
+        method: 'POST',
+        body: { toStage: stage },
+      });
+      await refreshOpportunities();
+    } catch (err) {
+      setStatus(oppStatus, 'err', err.message);
+    }
+  });
+
+  col.appendChild(title);
+  col.appendChild(drop);
+  return { col, drop };
+}
+
+function renderKanban(opps) {
+  kanban.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'kanban';
+
+  const cols = new Map();
+  for (const stage of STAGES) {
+    const { col, drop } = buildKanbanColumn(stage);
+    cols.set(stage, drop);
+    grid.appendChild(col);
+  }
+
+  for (const o of opps) {
+    const card = document.createElement('div');
+    card.className = 'card-item';
+    card.draggable = true;
+    card.addEventListener('dragstart', (e) => {
+      e.dataTransfer?.setData('text/opportunity-id', o.id);
+      e.dataTransfer?.setData('text/plain', o.id);
+    });
+
+    // Improve cross-browser DnD: ensure we always attach the id.
+    card.dataset.opportunityId = o.id;
+
+    const title = document.createElement('div');
+    title.className = 'card-title';
+    title.textContent = o.title;
+
+    const meta = document.createElement('div');
+    meta.className = 'card-meta';
+    meta.innerHTML = `
+      <span>${escapeHtml(o.stage)}</span>
+      <span>R$ ${escapeHtml(formatAmount(o.amount))}</span>
+    `;
+
+    card.appendChild(title);
+    card.appendChild(meta);
+
+    const target = cols.get(o.stage) ?? cols.get('NEW');
+    target.appendChild(card);
+  }
+
+  kanban.appendChild(grid);
+}
+
 async function refreshOpportunities() {
   if (!selectedCustomerId) {
     setStatus(oppStatus, 'err', 'Selecione um cliente primeiro');
@@ -111,19 +207,7 @@ async function refreshOpportunities() {
     const opps = await api('/opportunities');
 
     const filtered = opps.filter((o) => o.customerId === selectedCustomerId);
-
-    oppsTbody.innerHTML = '';
-    for (const o of filtered) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${escapeHtml(o.title ?? '')}</td>
-        <td>${escapeHtml(o.stage ?? '')}</td>
-        <td>${escapeHtml(o.amount ?? '')}</td>
-        <td class="muted"><code>${escapeHtml(o.customerId ?? '')}</code></td>
-        <td class="muted"><code>${escapeHtml(o.id ?? '')}</code></td>
-      `;
-      oppsTbody.appendChild(tr);
-    }
+    renderKanban(filtered);
 
     setStatus(oppStatus, 'ok', `${filtered.length} oportunidade(s)`);
   } catch (err) {

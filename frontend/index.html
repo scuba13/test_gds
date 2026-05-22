@@ -157,6 +157,69 @@
         border-collapse: collapse;
       }
 
+      .kanban {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(180px, 1fr));
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+
+      .kanban-col {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(0, 0, 0, 0.14);
+        min-height: 240px;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      .kanban-col h3 {
+        margin: 0;
+        padding: 10px 10px;
+        font-size: 12px;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border);
+        letter-spacing: 0.2px;
+      }
+
+      .kanban-drop {
+        padding: 10px;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .card-item {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+        cursor: grab;
+      }
+
+      .card-item:active {
+        cursor: grabbing;
+      }
+
+      .card-title {
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+
+      .card-meta {
+        font-size: 11px;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .drop-active {
+        outline: 2px solid rgba(106, 166, 255, 0.55);
+        outline-offset: -2px;
+      }
+
       th,
       td {
         text-align: left;
@@ -331,18 +394,11 @@
           </div>
         </form>
 
-        <table style="margin-top: 12px">
-          <thead>
-            <tr>
-              <th>Título</th>
-              <th>Stage</th>
-              <th>Valor</th>
-              <th>Customer</th>
-              <th class="muted">ID</th>
-            </tr>
-          </thead>
-          <tbody id="oppsTbody"></tbody>
-        </table>
+        <div id="kanban" style="margin-top: 14px"></div>
+
+        <p class="muted" style="margin: 10px 0 0 0; font-size: 12px">
+          Dica: arraste um card entre colunas para mudar o stage (persistido no backend).
+        </p>
       </section>
     </main>
 

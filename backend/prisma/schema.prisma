@@ -30,6 +30,7 @@ model Company {
   customers     Customer[]
   contacts      Contact[]
   opportunities Opportunity[]
+  opportunityStageHistory OpportunityStageHistory[]
 
   @@map("companies")
 }
@@ -99,9 +100,28 @@ model Opportunity {
 
   company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  history  OpportunityStageHistory[]
 
   @@index([companyId])
   @@index([customerId])
   @@index([companyId, stage])
   @@map("opportunities")
+}
+
+model OpportunityStageHistory {
+  id            String           @id @default(cuid())
+  companyId      String
+  opportunityId  String
+  fromStage      OpportunityStage
+  toStage        OpportunityStage
+  changedAt      DateTime         @default(now())
+  changedByUserId String?
+
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([opportunityId])
+  @@index([companyId, changedAt])
+  @@map("opportunity_stage_history")
 }

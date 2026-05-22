@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import type { OpportunityStage } from './dto/opportunity-stage';
 import type { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import type { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 
@@ -64,6 +65,50 @@ export class OpportunitiesService {
   deleteById(companyId: string, id: string) {
     return this.prisma.opportunity.delete({
       where: { id },
+    });
+  }
+
+  async moveStage(params: {
+    companyId: string;
+    opportunityId: string;
+    toStage: OpportunityStage;
+    changedByUserId?: string;
+  }) {
+    const { companyId, opportunityId, toStage, changedByUserId } = params;
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.opportunity.findFirst({
+        where: { id: opportunityId, companyId },
+      });
+      if (!existing) return null;
+
+      if (existing.stage === toStage) {
+        return existing;
+      }
+
+      const updated = await tx.opportunity.update({
+        where: { id: opportunityId },
+        data: { stage: toStage },
+      });
+
+      await tx.opportunityStageHistory.create({
+        data: {
+          companyId,
+          opportunityId,
+          fromStage: existing.stage,
+          toStage,
+          changedByUserId,
+        },
+      });
+
+      return updated;
+    });
+  }
+
+  listHistory(companyId: string, opportunityId: string) {
+    return this.prisma.opportunityStageHistory.findMany({
+      where: { companyId, opportunityId },
+      orderBy: { changedAt: 'desc' },
     });
   }
 }

@@ -15,6 +15,7 @@ import { AuthGuard } from '../common/guards/auth.guard';
 import { OpportunitiesService } from './opportunities.service';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import { MoveOpportunityDto } from './dto/move-opportunity.dto';
 
 @Controller('opportunities')
 @UseGuards(AuthGuard)
@@ -60,6 +61,31 @@ export class OpportunitiesController {
     }
 
     return this.opportunities.updateById(companyId, id, dto);
+  }
+
+  @Post(':id/move')
+  async move(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: MoveOpportunityDto,
+  ) {
+    const { companyId, userId } = req.user!;
+    const updated = await this.opportunities.moveStage({
+      companyId,
+      opportunityId: id,
+      toStage: dto.toStage,
+      changedByUserId: userId,
+    });
+    if (!updated) throw new NotFoundException('Opportunity not found');
+    return updated;
+  }
+
+  @Get(':id/history')
+  async history(@Req() req: Request, @Param('id') id: string) {
+    const { companyId } = req.user!;
+    const existing = await this.opportunities.findById(companyId, id);
+    if (!existing) throw new NotFoundException('Opportunity not found');
+    return this.opportunities.listHistory(companyId, id);
   }
 
   @Delete(':id')
