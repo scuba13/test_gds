@@ -7,6 +7,7 @@ import { ProtectedModule } from './protected/protected.module';
 import { CustomersModule } from './customers/customers.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { OpportunitiesModule } from './opportunities/opportunities.module';
     CustomersModule,
     ContactsModule,
     OpportunitiesModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

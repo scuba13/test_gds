@@ -1,6 +1,10 @@
 const authStatus = document.querySelector('#authStatus');
 const custStatus = document.querySelector('#custStatus');
 
+const dashboard = document.querySelector('#dashboard');
+const refreshDashboardBtn = document.querySelector('#refreshDashboardBtn');
+const dashboardStatus = document.querySelector('#dashboardStatus');
+
 const emailEl = document.querySelector('#email');
 const passwordEl = document.querySelector('#password');
 const companyNameEl = document.querySelector('#companyName');
@@ -104,9 +108,62 @@ const STAGES = ['NEW', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'];
 
 function formatAmount(value) {
   if (value === null || value === undefined || value === '') return '';
+
+  // Prisma Decimal can arrive as string/number/object depending on serialization.
+  if (typeof value === 'object') {
+    try {
+      // e.g. Decimal.js: { d: ..., e: ... } or similar; best-effort.
+      value = value.toString?.() ?? String(value);
+    } catch {
+      value = String(value);
+    }
+  }
+
   const n = Number(value);
   if (Number.isNaN(n)) return String(value);
-  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function renderDashboard(summary) {
+  const items = [
+    ['Clientes', summary.totalCustomers],
+    ['Contatos', summary.totalContacts],
+    ['Oportunidades', summary.totalOpportunities],
+    ['Abertas', summary.openOpportunities],
+    ['Ganhas', summary.wonOpportunities],
+    ['Perdidas', summary.lostOpportunities],
+    ['Pipeline aberto', `R$ ${formatAmount(summary.openPipelineAmount)}`],
+  ];
+
+  dashboard.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'stats';
+
+  for (const [label, value] of items) {
+    const el = document.createElement('div');
+    el.className = 'stat';
+    el.innerHTML = `
+      <div class="label">${escapeHtml(label)}</div>
+      <div class="value">${escapeHtml(value)}</div>
+    `;
+    grid.appendChild(el);
+  }
+
+  dashboard.appendChild(grid);
+}
+
+async function refreshDashboard() {
+  try {
+    setStatus(dashboardStatus, null, 'Carregando...');
+    const summary = await api('/metrics/summary');
+    renderDashboard(summary);
+    setStatus(dashboardStatus, 'ok', 'ok');
+  } catch (err) {
+    setStatus(dashboardStatus, 'err', err.message);
+  }
 }
 
 function buildKanbanColumn(stage) {
@@ -277,6 +334,7 @@ registerBtn.addEventListener('click', async () => {
     setStatus(authStatus, 'ok', 'Cadastrado e logado (cookie emitido)');
     setSelectedCustomer(null);
     await refreshCustomers();
+    await refreshDashboard();
   } catch (err) {
     setStatus(authStatus, 'err', err.message);
   }
@@ -292,6 +350,7 @@ loginBtn.addEventListener('click', async () => {
     setStatus(authStatus, 'ok', 'Logado (cookie emitido)');
     setSelectedCustomer(null);
     await refreshCustomers();
+    await refreshDashboard();
   } catch (err) {
     setStatus(authStatus, 'err', err.message);
   }
@@ -304,6 +363,8 @@ logoutBtn.addEventListener('click', async () => {
     setStatus(authStatus, 'ok', 'Logout ok');
     customersTbody.innerHTML = '';
     setSelectedCustomer(null);
+    dashboard.innerHTML = '';
+    setStatus(dashboardStatus, null, '');
     setStatus(custStatus, null, '');
   } catch (err) {
     setStatus(authStatus, 'err', err.message);
@@ -337,6 +398,7 @@ customerForm.addEventListener('submit', async (e) => {
 });
 
 refreshBtn.addEventListener('click', refreshCustomers);
+refreshDashboardBtn.addEventListener('click', refreshDashboard);
 
 contactForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -416,6 +478,7 @@ refreshOppsBtn.addEventListener('click', refreshOpportunities);
     setStatus(authStatus, 'ok', 'Sessão ativa');
     setSelectedCustomer(null);
     await refreshCustomers();
+    await refreshDashboard();
     await refreshOpportunities();
   } catch {
     setStatus(authStatus, null, 'Não autenticado');
